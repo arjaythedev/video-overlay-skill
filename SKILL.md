@@ -239,6 +239,46 @@ ffmpeg -i video.MOV -vf "select=eq(n\,0)" -vframes 1 frame.png
 
 For example, if hair top is at y=420 in the 1920px-tall frame, the offset = 1080 - 420 = 660. This shifts the video down so the hair top aligns exactly with the bottom edge of the overlay.
 
+#### Head Placement Validation (REQUIRED)
+
+Before committing to the `VIDEO_OFFSET_Y` value, **dispatch a subagent to validate the head placement**. This catches errors before they propagate into all 3 renders.
+
+1. After calculating `VIDEO_OFFSET_Y`, generate a **composited preview frame** using ffmpeg:
+
+```bash
+# Extract a representative frame from the raw video (frame 30 = ~1 second in)
+ffmpeg -i video.MOV -vf "select=eq(n\,30)" -vframes 1 raw_frame.png
+
+# Create a blank 1080x1920 canvas, place the video frame at the calculated offset,
+# and draw a red guide line at y=1080 (the overlay boundary)
+ffmpeg -f lavfi -i "color=black:s=1080x1920:d=1" \
+  -i raw_frame.png \
+  -filter_complex "[0:v][1:v]overlay=0:${VIDEO_OFFSET_Y},drawbox=y=1080:w=1080:h=2:color=red:t=fill[out]" \
+  -map "[out]" -frames:v 1 head_placement_check.png
+```
+
+2. **Dispatch a subagent** (using the Agent tool) to review the generated `head_placement_check.png`. The subagent prompt should be:
+
+> Review the image `head_placement_check.png`. This is a 1080x1920 composited preview frame for a vertical video overlay pipeline.
+>
+> The RED horizontal line at y=1080 marks the boundary between the overlay zone (top half) and the speaker zone (bottom half).
+>
+> Validate ALL of the following:
+> - **Head clearance**: The top of the speaker's hair should be JUST BELOW the red line (within ~20px). If the hair is significantly above the line, the overlay will cover the speaker's head. If it's too far below, there will be a visible gap/black bar.
+> - **Head centering**: The speaker's head should be roughly horizontally centered in the frame. Flag if the head is noticeably off-center.
+> - **Head cropping**: The speaker's chin and shoulders should be visible — the head should NOT be cropped at the bottom of the frame.
+> - **Overall composition**: Does the placement look natural? Would a viewer see a clean transition from overlay graphics to the speaker?
+>
+> Respond with:
+> - **PASS** if placement looks correct, with a brief confirmation
+> - **FAIL** with specific issues and a recommended adjustment (e.g., "hair is ~60px above the red line, increase VIDEO_OFFSET_Y by ~60")
+
+3. **If the subagent returns FAIL**: Adjust `VIDEO_OFFSET_Y` per its recommendation, regenerate the preview, and re-validate. Repeat until PASS.
+
+4. **If the subagent returns PASS**: Proceed to build the Remotion project with the validated offset value.
+
+**Do not skip this step.** An incorrect offset ruins all 3 final renders and wastes significant render time.
+
 #### Building overlay compositions
 
 Use the `remotion-video-creator` skill to write each version's scene components. Follow its Phase 2 (Design) and Phase 3 (Build) workflows for the 1080x1080 overlay content.
