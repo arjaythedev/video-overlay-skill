@@ -17,7 +17,7 @@ description: >
 Takes a vertical (9:16) talking-head video, creates 3 different animated overlay variations synced to the transcript, composites each overlay on top of the original video, and renders 3 final TikTok-ready MP4s. No captions are added.
 
 The output is 3 complete 1080x1920 videos where:
-- **Top half** (1080x1080): Animated overlay graphics following the Maven brand style guide
+- **Top half** (1080x1080): Animated overlay graphics following the brand style guide
 - **Bottom half**: The speaker's head/shoulders from the original video, shifted so head sits just below the overlay
 
 ## Core Directives (Non-Negotiable)
@@ -73,7 +73,7 @@ Something on screen must visibly change every 2–3 seconds — either a new sce
 
 This applies to the hero opener too — its construction (nodes appearing, arrows connecting, labels fading in) should itself supply 2–3 animation beats in the first 2 seconds.
 
-## Brand Style Guide (Maven)
+## Brand Style Guide (the brand)
 
 All overlays MUST follow these brand guidelines. This is the visual identity — do not deviate.
 
@@ -275,7 +275,7 @@ For each approach:
 4. Follow the brand style guide above AND the `remotion-video-creator` skill's design principles:
    - Fill ~80% of the 1080x1080 canvas (content starts at y≈200, avoiding top 20%)
    - Graphics over text (the voiceover already delivers the words)
-   - Use the Maven color palette (navy hero + off-white content + white cards)
+   - Use the brand color palette (navy hero + off-white content + white cards)
    - Smooth easing animations with staggered delays (NO spring/bounce)
    - No scene headers or labels in the top 20% — keep that zone clean
    - Minimum 36px text, 56px+ headings, 100px+ hero numbers (mobile-readable)
