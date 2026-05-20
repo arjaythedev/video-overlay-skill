@@ -23,6 +23,7 @@ The `VIDEO_OFFSET_Y` value must be calculated per-video based on where the speak
 ```tsx
 import React from "react";
 import { OffthreadVideo, staticFile } from "remotion";
+import { SUBTITLE_KEEPOUT } from "./theme";
 
 // Hair top in original video: ~y=420 out of 1920
 // We want hair top at y=1080 (bottom of overlay area)
@@ -62,7 +63,7 @@ export const FinalComposition: React.FC<FinalCompositionProps> = ({
         />
       </div>
 
-      {/* Overlay — top 1080x1080 */}
+      {/* Overlay — top 1080x1080, clipped at bottom if subtitles need to show through */}
       <div
         style={{
           position: "absolute",
@@ -70,6 +71,10 @@ export const FinalComposition: React.FC<FinalCompositionProps> = ({
           left: 0,
           width: 1080,
           height: 1080,
+          clipPath:
+            SUBTITLE_KEEPOUT > 0
+              ? `inset(0 0 ${SUBTITLE_KEEPOUT}px 0)`
+              : undefined,
         }}
       >
         <OverlayComponent />
@@ -112,33 +117,33 @@ Centralizes the design system and timing constants. The timing values must be ca
 
 ```typescript
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { loadFont as loadHeading } from "@remotion/google-fonts/DMSans";
+import { loadFont as loadSerif } from "@remotion/google-fonts/EBGaramond";
 import { Easing } from "remotion";
 
 const { fontFamily: interFamily } = loadFont("normal", {
+  weights: ["400", "500", "600", "700", "800"],
+  subsets: ["latin"],
+});
+
+const { fontFamily: garamondFamily } = loadSerif("normal", {
   weights: ["400", "500", "600", "700"],
   subsets: ["latin"],
 });
 
-const { fontFamily: dmSansFamily } = loadHeading("normal", {
-  weights: ["500", "600", "700"],
-  subsets: ["latin"],
-});
-
-export const FONT = interFamily;          // Body — labels, data, credentials
-export const FONT_HEADING = dmSansFamily; // Headings — key metrics, titles
+export const FONT = interFamily;         // Sans — body, labels, data
+export const FONT_SERIF = garamondFamily; // Serif — headings, hero numbers
 
 export const COLORS = {
-  heroDark: "#1A1A2E",       // Deep charcoal-navy — hero sections
-  lightBg: "#FAFAFA",        // Clean off-white — content sections
+  heroDark: "#0D1527",       // Deep navy — hero sections
+  lightBg: "#F4F4F2",        // Warm off-white — content sections
   cardBg: "#FFFFFF",         // Pure white — cards
   textOnDark: "#FFFFFF",     // Text on dark backgrounds
-  textOnLight: "#1A1A1A",    // Text on light backgrounds
-  textMuted: "#6B7280",      // Secondary text
-  textMeta: "#9CA3AF",       // Labels, credentials
-  accentBlue: "#3B82F6",     // Primary accent — highlights, underlines
-  accentTeal: "#14B8A6",     // Secondary accent — success, positive data
-  border: "#E5E7EB",         // Dividers, card borders
+  textOnLight: "#111111",    // Text on light backgrounds
+  textMuted: "#555555",      // Secondary text
+  textMeta: "#777777",       // Labels, credentials
+  accentGreen: "#C8F135",    // Underline reveals (use sparingly)
+  accentAmber: "#F5A623",    // Star ratings, warm highlights
+  border: "#E0E0E0",         // Dividers, card borders
 };
 
 // Easing curves — NO spring() or bounce
@@ -152,9 +157,18 @@ export const TRANSITION = 10; // frames of overlap between scenes
 // Calculate these based on the video:
 // TOTAL_FRAMES = videoDurationSeconds * FPS
 // SCENE_DURATIONS = calculated from transcript breakpoints using TransitionSeries math
-// Target ~2s per scene (60 frames at 30fps) for fast, engaging pacing
+// Target ~60 frames per scene (2s at 30fps), max ~90 frames (3s) for fast pacing.
+// Scene 1 is always the hero diagram opener (Core Directive 1) — never a title card.
+// If any scene runs longer than ~2s, stagger element entrances so a new visual
+// beat appears within it every 30-45 frames (Core Directive 3).
 export const TOTAL_FRAMES = 810; // example: 27s * 30fps
 export const SCENE_DURATIONS = [60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 70]; // example: ~14 scenes for 27s video
+
+// Subtitle keep-out: pixels from bottom of 1080x1080 overlay to leave clear.
+// Set to 0 when video has no burned-in subtitles or subtitles are below the overlay.
+// When > 0, FinalComposition clips the overlay and scenes must keep content above
+// (1080 - SUBTITLE_KEEPOUT - 40).
+export const SUBTITLE_KEEPOUT = 0;
 ```
 
 ### TransitionSeries timing math
@@ -265,14 +279,14 @@ import React from "react";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { TRANSITION, SCENE_DURATIONS } from "../theme";
-import { HookScene } from "./scenes/HookScene";
+import { HeroDiagramScene } from "./scenes/HeroDiagramScene"; // Core Directive 1: content-specific animated diagram opener, never a title card
 import { ClearScene } from "./scenes/ClearScene";
 import { CompactScene } from "./scenes/CompactScene";
 import { SimplifyScene } from "./scenes/SimplifyScene";
 import { CTAScene } from "./scenes/CTAScene";
 
 const scenes = [
-  { Component: HookScene, duration: SCENE_DURATIONS[0] },
+  { Component: HeroDiagramScene, duration: SCENE_DURATIONS[0] },
   { Component: ClearScene, duration: SCENE_DURATIONS[1] },
   { Component: CompactScene, duration: SCENE_DURATIONS[2] },
   { Component: SimplifyScene, duration: SCENE_DURATIONS[3] },
